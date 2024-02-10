@@ -38,13 +38,16 @@ const initialFacts = [
 
 function App() {
   const [showForm, setShowForm] = useState(false);
+  const [facts, setFacts] = useState(initialFacts);
   return (
     <>
       <Header setShowForm={setShowForm} showForm={showForm} />
-      {showForm ? <NewFactForm /> : null}
+      {showForm ? (
+        <NewFactForm setFacts={setFacts} setShowForm={setShowForm} />
+      ) : null}
       <main className="main">
         <CategoryFilter />
-        <FactList />
+        <FactList facts={facts} />
       </main>
     </>
   );
@@ -78,14 +81,50 @@ const CATEGORIES = [
   { name: "news", color: "#8b5cf6" },
 ];
 
-function NewFactForm() {
+function isValidHttpUrl(string) {
+  let url;
+
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
+
+function NewFactForm({ setFacts, setShowForm }) {
   const [text, setText] = useState("");
   const [source, setSource] = useState("");
   const [category, setCategory] = useState("");
 
   function handleSubmit(e) {
+    // 1. prevent browser reload
     e.preventDefault();
     console.log(text, source, category);
+
+    // 2. check if data is valid
+    if (text && isValidHttpUrl(source) && category && text.length <= 300) {
+      // 3. Create a new fact object
+      const newFact = {
+        id: Math.round(Math.random() * 1000000),
+        text,
+        source,
+        category,
+        votesInteresting: 0,
+        votesMindblowing: 0,
+        votesFalse: 0,
+        createdIn: new Date().getFullYear(),
+      };
+      // 4. Add the new fact to the UI
+      setFacts((facts) => [newFact, ...facts]);
+      //5. Reset input fields
+      setText("");
+      setSource("");
+      setCategory("");
+      //6. Close form
+      setShowForm(false);
+    }
   }
   return (
     <form className="fact-form" onSubmit={handleSubmit}>
@@ -96,7 +135,7 @@ function NewFactForm() {
         value={text}
         onChange={(e) => setText(e.target.value)}
       />
-      <span>{300 - text.length} / 300</span>
+      <span>{200 - text.length}/200</span>
       <input
         type="text"
         placeholder="Trustworthy source..."
@@ -138,9 +177,9 @@ function CategoryFilter() {
   );
 }
 
-function FactList() {
+function FactList({ facts }) {
   //temporary
-  const facts = initialFacts;
+
   return (
     <section>
       <ul className="facts-list">
